@@ -368,3 +368,9 @@ def test_compare_different_hands():
     with pytest.raises(ValueError) as e_info:
         compare_equal_hands(hand1, hand2)
         assert e_info.value == "Hands are not of the same rank."
+
+def test_compare_same_hands_full_house():
+    hand1 = [Card("9", "h"), Card("9", "d"), Card("A", "s"), Card("A", "c"), Card("A", "h")]
+    hand2 = [Card("9", "h"), Card("9", "d"), Card("A", "s"), Card("A", "c"), Card("A", "h")]
+    winning_hand = compare_full_houses(hand1, hand2)
+    assert winning_hand == 0
