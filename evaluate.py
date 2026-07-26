@@ -1,3 +1,6 @@
+import itertools
+from cards import Card
+
 def evaluate_hand(hand):
     if is_royal_flush(hand):
         return "Royal Flush"
@@ -162,3 +165,54 @@ def compare_full_houses(hand1, hand2):
         return hand2
     else:
         return 0
+
+
+def best_of_seven(hole_cards, community_cards):
+    all_cards = hole_cards + community_cards
+    all_hands = [(combination, score_hand(combination)) for combination in itertools.combinations(all_cards, 5)]
+    if len(all_hands) != 21:
+        raise ValueError("Not all combinations are valid.")
+
+    highest = max(all_hands, key=lambda x: x[1])[1]
+    best_hands = [hand for hand, score in all_hands if score == highest]
+    highest_hand = None
+    for hand in best_hands:
+        if highest_hand is None:
+            highest_hand = hand
+        else:
+            comparison = compare_equal_hands(highest_hand, hand)
+            if comparison == hand:
+                highest_hand = hand
+            elif comparison == 0:
+                continue
+
+    return (highest_hand, score_hand(highest_hand))
+
+
+def winners(hole1, hole2, community_cards):
+    hand1, score1 = best_of_seven(hole1, community_cards)
+    hand2, score2 = best_of_seven(hole2, community_cards)
+    if score1 > score2:
+        return ('Player 1', hand1)
+    elif score1 < score2:
+        return ('Player 2', hand2)
+    else:
+        comparison = compare_equal_hands(hand1, hand2)
+        return ('Player 1', hand1) if comparison == hand1 else ('Player 2', hand2)
+
+def format_output(hand, player='You', symbol=True):
+    def utility(hand, symbol):
+        if symbol:
+            hand_output = ' '.join(card_to_str(card) for card in hand)
+            return ''.join({'d': '♦', 's': '♠', 'c': '♣', 'h': '♥'}.get(card, card) for card in hand_output) 
+           
+        else:
+            return ' '.join(card_to_str(card) for card in hand)
+            
+
+    from cards import card_to_str
+    return f'{player} won with a {evaluate_hand(hand)}: {utility(hand, symbol)}'
+
+
+if __name__ == '__main__':
+    print(format_output([Card("A", "s"), Card("7", "h"), Card("T", "s"), Card("4", "d"), Card("Q", "h")], 'You'))
