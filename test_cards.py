@@ -1,5 +1,6 @@
 from cards import Card, card_to_str, make_deck, shuffle_deck, str_to_card, validate_card, shuffle_deck
 from evaluate import best_of_seven, compare_equal_hands, compare_full_houses, evaluate_hand, score_hand, winners, format_output
+from simulate import category_frequencies, standard_error
 import pytest
 import random
 import cards
@@ -546,3 +547,9 @@ def test_category_frequencies():
     simulation1 = category_frequencies(10, rng=rng1)
     simulation2 = category_frequencies(10, rng=rng2)
     assert simulation1 != simulation2
+
+def test_standard_error_lies_within_bounds():
+    from simulate import category_frequencies, standard_error
+    rng = random.Random(1)
+    simulation = category_frequencies(1000, rng=rng)
+    assert all(standard_error(simulation, 1000)[category] >= 0 and standard_error(simulation, 1000)[category] <= 1 for category in simulation)
