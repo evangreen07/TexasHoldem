@@ -553,3 +553,49 @@ def test_standard_error_lies_within_bounds():
     rng = random.Random(1)
     simulation = category_frequencies(1000, rng=rng)
     assert all(standard_error(simulation, 1000)[category] >= 0 and standard_error(simulation, 1000)[category] <= 1 for category in simulation)
+
+def test_hand_equity():
+    from simulate import hand_equity
+    rng = random.Random(42)
+    equity = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng)
+    assert equity is not None
+    assert equity == {'wins': 0.4, 'ties': 0.2, 'losses': 0.4}
+
+def test_hand_equity_with_different_seeds():
+    from simulate import hand_equity
+    rng1 = random.Random(42)
+    rng2 = random.Random(123)
+    equity1 = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng1)
+    equity2 = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng2)
+    assert equity1 != equity2
+
+def test_cannonical_hand():
+    from simulate import cannonical_hands
+    hand = cannonical_hands()
+    assert hand is not None
+    assert len(hand) == 1326
+
+def test_hand_in_label():
+    from simulate import hand_in_label
+    from cards import Card, make_deck
+    deck = [Card('A', 's'), Card('K', 's'), Card('K', 'd'), Card('J', 's'), Card('T', 'h'), Card('A', 'd')]
+    label = hand_in_label(deck)
+    assert label is not None
+    assert len(label) == 11
+
+
+def test_hand_in_label_whole_deck():
+    from simulate import hand_in_label
+    from cards import make_deck
+    deck = make_deck()
+    label = hand_in_label(deck)
+    assert label is not None
+    assert len(label) == 169
+
+
+def test_hand_equity_with_cannonical():
+    from simulate import hand_equity, hand_in_label
+    rng = random.Random(42)
+    equity = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng)
+    assert equity is not None
+    assert equity == {'wins': 0.4, 'ties': 0.2, 'losses': 0.4}
