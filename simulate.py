@@ -70,8 +70,9 @@ def hand_equity(hole, trials, rng=random.Random(42)):
     losses = 0
     for _ in range(trials):
         deck = shuffle_deck(rng)
+        deck = [card for card in deck if card not in hole]
         opponent_hole = deck[:2]
-        deck = [card for card in deck if card not in hole and card not in opponent_hole]
+        deck = deck[2:]
         community_cards = deck[:5]
         player_hand, player_score = best_of_seven(hole, community_cards)
         opponent_hand, opponent_score = best_of_seven(opponent_hole, community_cards)
@@ -79,17 +80,42 @@ def hand_equity(hole, trials, rng=random.Random(42)):
         if player_score > opponent_score:
             wins += 1
         elif player_score == opponent_score:
-            ties += 1
+            from evaluate import compare_equal_hands
+            comparison = compare_equal_hands(player_hand, opponent_hand)
+            if comparison == player_hand:
+                wins += 1
+            elif comparison == opponent_hand:
+                losses += 1
+            else:
+                ties += 1
         else:
             losses += 1
     
     return {'wins': wins / trials, 'ties': ties / trials, 'losses': losses / trials}
 
 
+def create_hole_from_label(label):
+    from cards import Card
+    rank1, rank2 = label[0], label[1]
+    if len(label) == 2:
+        return [Card(rank1, 's'), Card(rank2, 'h')]
+    elif label[2] == 's':
+        return [Card(rank1, 's'), Card(rank2, 's')]
+    else:
+        return [Card(rank1, 's'), Card(rank2, 'h')]
+
+
 
 if __name__ == '__main__':
-    from cards import Card
-    #print(hand_equity([Card('A', 's'), Card('K', 's')], 5, random.Random(42)))
+    from simulate import hand_in_label, hand_equity, create_hole_from_label
+    from cards import make_deck
+    deck = make_deck()
+    rng = random.Random(42)
+    trials = 10
+    labels = hand_in_label(deck)
+    equities = {label: hand_equity(create_hole_from_label(label), trials, rng) for label in labels}
+    print(equities)
+
 
 
 

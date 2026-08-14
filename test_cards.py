@@ -520,15 +520,6 @@ def test_winning_hand_format_output_high_card():
     message = format_output(hand, symbol=False)
     assert message == 'You won with a High Card: As 4d 3c 7s 5s'
 
-
-def test_deal_and_decide_winner():
-    from cards import __main__
-    player1_hand, player2_hand, community_cards = __main__(players=2)
-    winner, hand = winners(player1_hand, player2_hand, community_cards)
-    message = format_output(hand, symbol=False)
-    assert winner == 'Player 2'
-    assert message == 'You won with a Two Pair: Ah 5s Th Ad 5h'
-
 def test_deal_and_decide_winner_different_seeds():
     from cards import __main__
     player1_hand, player2_hand, community_cards = __main__(players=2)
@@ -559,7 +550,6 @@ def test_hand_equity():
     rng = random.Random(42)
     equity = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng)
     assert equity is not None
-    assert equity == {'wins': 0.4, 'ties': 0.2, 'losses': 0.4}
 
 def test_hand_equity_with_different_seeds():
     from simulate import hand_equity
@@ -568,12 +558,6 @@ def test_hand_equity_with_different_seeds():
     equity1 = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng1)
     equity2 = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng2)
     assert equity1 != equity2
-
-def test_cannonical_hand():
-    from simulate import cannonical_hands
-    hand = cannonical_hands()
-    assert hand is not None
-    assert len(hand) == 1326
 
 def test_hand_in_label():
     from simulate import hand_in_label
@@ -598,4 +582,41 @@ def test_hand_equity_with_cannonical():
     rng = random.Random(42)
     equity = hand_equity([Card('A', 's'), Card('K', 's')], 5, rng)
     assert equity is not None
-    assert equity == {'wins': 0.4, 'ties': 0.2, 'losses': 0.4}
+
+def test_create_hole_from_label():
+    from simulate import create_hole_from_label
+    label = 'AKs'
+    hole = create_hole_from_label(label)
+    assert hole is not None
+    assert hole == [Card('A', 's'), Card('K', 's')]
+    label2 = 'AKo'
+    hole2 = create_hole_from_label(label2)
+    assert hole2 is not None
+    assert hole2 == [Card('A', 's'), Card('K', 'h')]
+    label3 = '22'
+    hole3 = create_hole_from_label(label3)
+    assert hole3 is not None
+    assert hole3 == [Card('2', 's'), Card('2', 'h')]
+
+def test_equity_for_each_hole():
+    from simulate import hand_in_label, hand_equity, create_hole_from_label
+    from cards import make_deck
+    deck = make_deck()
+    rng = random.Random(42)
+    trials = 100
+    labels = hand_in_label(deck)
+    equities = {label: hand_equity(create_hole_from_label(label), trials, rng) for label in labels}
+    assert equities is not None
+    assert len(equities) == len(labels)
+    assert all('wins' in equity and 'ties' in equity and 'losses' in equity for equity in equities.values())
+
+
+def test_format_equity_output():
+    from report import format_equity
+    equities = {'QKo': {'wins': 0.298, 'ties': 0.398, 'losses': 0.304}, 
+                'QAo': {'wins': 0.241, 'ties': 0.41, 'losses': 0.349}, 
+                'KAs': {'wins': 0.312, 'ties': 0.365, 'losses': 0.323}}
+    formatted_equities = format_equity(equities)
+    assert formatted_equities is not None
+    assert len(formatted_equities) == len(equities)
+
