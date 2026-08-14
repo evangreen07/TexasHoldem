@@ -35,6 +35,8 @@ def plot_heatmap():
         ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2']
         mat = pd.DataFrame(index=ranks, columns=ranks, data=float('nan'))
 
+        labels_mat = pd.DataFrame(index=ranks, columns=ranks, data='')
+
         equity_map = {row['Hand']: row['Equity'] for _, row in df.iterrows()}
 
         for i, r in enumerate(ranks):
@@ -46,15 +48,16 @@ def plot_heatmap():
 
                 if label in equity_map:
                     mat.at[r, c] = equity_map[label]
+                    labels_mat.at[r, c] = label
                 else:
-                    rev = c + r + ('s' if j > i else 'o') if r != c else label
+                    rev = c + r + label[-1] if r != c else label
                     mat.at[r, c] = equity_map.get(rev, float('nan'))
+                    labels_mat.at[r, c] = rev
+        return mat, labels_mat
 
-        return mat
+    pivot_table, labels_table = prepare_matrix_from_csv('equity_grid.csv')
 
-    pivot_table = prepare_matrix_from_csv('equity_grid.csv')
-
-    sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="rocket_r", cbar_kws={'label': 'Equity'})
+    sns.heatmap(pivot_table, annot=labels_table, fmt="", cmap="rocket_r", cbar_kws={'label': 'Equity'})
     plt.title('Poker Hand Equity Heatmap')
     plt.tight_layout()
     plt.show()
