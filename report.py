@@ -10,7 +10,7 @@ def render_grid():
     from cards import make_deck
     deck = make_deck()
     rng = random.Random(42)
-    trials = 100
+    trials = 1000
     labels = hand_in_label(deck)
     equities = {label: hand_equity(create_hole_from_label(label), trials, rng) for label in labels}
     formatted_equities = format_equity(equities)
@@ -42,13 +42,11 @@ def plot_heatmap():
                 if r == c:
                     label = r + r
                 else:
-                    # convention: suited when row rank > col rank (below diagonal), offsuit otherwise
                     label = r + c + ('s' if i > j else 'o')
 
                 if label in equity_map:
                     mat.at[r, c] = equity_map[label]
                 else:
-                    # try reversed label (some CSVs may use order-independent labels)
                     rev = c + r + ('s' if j > i else 'o') if r != c else label
                     mat.at[r, c] = equity_map.get(rev, float('nan'))
 
@@ -56,7 +54,7 @@ def plot_heatmap():
 
     pivot_table = prepare_matrix_from_csv('equity_grid.csv')
 
-    sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="coolwarm", cbar_kws={'label': 'Equity'})
+    sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="rocket_r", cbar_kws={'label': 'Equity'})
     plt.title('Poker Hand Equity Heatmap')
     plt.tight_layout()
     plt.show()
