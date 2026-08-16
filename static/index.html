@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Texas Hold'em Equity</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-alt: #1f2937;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #4ade80;
+        --danger: #f87171;
+        --border: rgba(148, 163, 184, 0.2);
+        --card-bg: #f8fafc;
+        --card-text: #111827;
+        --heart: #ef4444;
+        --diamond: #f59e0b;
+        --club: #0f172a;
+        --spade: #0f172a;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #020617, #111827 35%, #0f172a);
+        color: var(--text);
+      }
+
+      .page {
+        width: min(92vw, 760px);
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+      }
+
+      input {
+        flex: 1 1 260px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(31, 41, 55, 0.9);
+        color: var(--text);
+        font-size: 1.05rem;
+      }
+
+      input:focus {
+        outline: 2px solid rgba(74, 222, 128, 0.5);
+        border-color: rgba(74, 222, 128, 0.7);
+      }
+
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 14px 22px;
+        font-size: 1rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover { filter: brightness(1.05); }
+      button:active { transform: translateY(1px); }
+
+      .info {
+        min-height: 120px;
+        background: rgba(17, 24, 39, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      .hand-display {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+
+      .card {
+        width: 82px;
+        height: 110px;
+        border-radius: 12px;
+        background: var(--card-bg);
+        color: var(--card-text);
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 10px 12px;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+      }
+
+      .card .top, .card .bottom {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .card .middle {
+        font-size: 2rem;
+        text-align: center;
+        line-height: 1;
+      }
+
+      .card.red { color: var(--heart); }
+      .card.black { color: var(--club); }
+
+      .equity-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+
+      .equity-label {
+        color: var(--muted);
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .equity-value {
+        font-size: clamp(1.6rem, 4vw, 2.8rem);
+        font-weight: 800;
+        color: var(--accent);
+      }
+
+      .status {
+        min-height: 24px;
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .error {
+        color: var(--danger);
+      }
+
+      .heatmap-container {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90vw;
+        max-height: 90vh;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid var(--accent);
+        border-radius: 18px;
+        padding: 20px;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .heatmap-container.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .heatmap-container img {
+        max-width: 100%;
+        max-height: calc(90vh - 80px);
+        border-radius: 12px;
+      }
+
+      .heatmap-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: var(--danger);
+        color: white;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+
+      .heatmap-close:hover {
+        background: #dc2626;
+      }
+
+      @media (max-width: 540px) {
+        .page { padding: 20px 16px; }
+        .controls { flex-direction: column; }
+        button { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Texas Hold'em Equity</h1>
+
+      <div class="controls">
+        <input id="handInput" type="text" value="Ah Kd" placeholder="Example: Ah Kd" aria-label="Two-card hand" />
+        <button id="submitBtn" type="button">Get Equity</button>
+        <button id="heatmapBtn" type="button">Show Heatmap</button>
+      </div>
+
+      <section class="info" aria-live="polite">
+        <div id="handDisplay" class="hand-display"></div>
+
+        <div class="equity-box">
+          <div class="equity-label">Equity</div>
+          <div id="equityValue" class="equity-value">--</div>
+        </div>
+
+        <div id="status" class="status">Enter a two-card hand to calculate equity.</div>
+      </section>
+
+      <div id="heatmapContainer" class="heatmap-container">
+        <button class="heatmap-close" aria-label="Close heatmap">✕</button>
+        <img src="static/THM_Heatmap.png" alt="Texas Hold'em Heatmap" />
+      </div>
+    </main>
+
+    <script>
+      const handInput = document.getElementById('handInput');
+      const submitBtn = document.getElementById('submitBtn');
+      const handDisplay = document.getElementById('handDisplay');
+      const equityValue = document.getElementById('equityValue');
+      const statusEl = document.getElementById('status');
+      const heatmapBtn = document.getElementById('heatmapBtn');
+      const heatmapContainer = document.getElementById('heatmapContainer');
+      const heatmapCloseBtn = document.querySelector('.heatmap-close');
+
+      function suitToSymbol(suit) {
+        const map = {
+          h: '♥',
+          d: '♦',
+          c: '♣',
+          s: '♠'
+        };
+        return map[(suit || '').toLowerCase()] || suit || '';
+      }
+
+      function cardColor(suit) {
+        const s = (suit || '').toLowerCase();
+        return s === 'h' || s === 'd' ? 'red' : 'black';
+      }
+
+      function rankText(rank) {
+        if (!rank) return '';
+        const map = {
+          10: 'T',
+          11: 'J',
+          12: 'Q',
+          13: 'K',
+          14: 'A'
+        };
+        return map[rank] || rank;
+      }
+
+      function parseHand(raw) {
+        const text = (raw || '').trim();
+        if (!text) return [];
+
+        const compact = text.replace(/\s+/g, '').replace(/,/g, '');
+        const matches = compact.match(/[2-9]|10|T|J|Q|K|A|j|q|k|a|t|[hdscHDSC]/g) || [];
+
+        if (matches.length === 0) return [];
+
+        let values = [];
+        for (let i = 0; i < matches.length; i += 2) {
+          const a = matches[i];
+          const b = matches[i + 1];
+          if (a && b) {
+            values.push(`${a}${b}`.toLowerCase());
+          }
+        }
+
+        return values.filter((card) => /^([2-9]|10|t|j|q|k|a)[hdsc]$/i.test(card)).slice(0, 2);
+      }
+
+      function formatCard(card) {
+        const match = card.match(/^([2-9]|10|j|q|k|a)([hdsc])$/i);
+        if (!match) return null;
+
+        const rank = match[1].toLowerCase();
+        const suit = match[2].toLowerCase();
+        const rankValue = rank === 'a' ? 'A' : rank === 'k' ? 'K' : rank === 'q' ? 'Q' : rank === 'j' ? 'J' : rank === '10' ? 'T' : rank.toUpperCase();
+
+        return {
+          rank: rankValue,
+          suit,
+          symbol: suitToSymbol(suit),
+          colorClass: cardColor(suit)
+        };
+      }
+
+      function renderHand(cards) {
+        handDisplay.innerHTML = '';
+
+        cards.forEach((cardText) => {
+          const info = formatCard(cardText);
+          if (!info) return;
+
+          const card = document.createElement('div');
+          card.className = `card ${info.colorClass}`;
+          card.innerHTML = `
+            <div class="top">${info.rank}</div>
+            <div class="middle">${info.symbol}</div>
+            <div class="bottom">${info.rank}</div>
+          `;
+          handDisplay.appendChild(card);
+        });
+      }
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle('error', isError);
+      }
+
+      function getCardValue(card) {
+        const match = card.match(/^([2-9]|10|j|q|k|a)([hdsc])$/i);
+        if (!match) return null;
+
+        const rank = match[1].toLowerCase();
+        const valueMap = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'j': 11, 'q': 12, 'k': 13, 'a': 14 };
+        return valueMap[rank];
+      }
+
+      function cardRankText(card) {
+        const match = card.match(/^([2-9]|10|j|q|k|a)([hdsc])$/i);
+        if (!match) return null;
+
+        const rank = match[1].toLowerCase();
+        const rankMap = { '10': 'T', j: 'J', q: 'Q', k: 'K', a: 'A' };
+        return rankMap[rank] || rank.toUpperCase();
+      }
+
+      function formatHandNotation(cards) {
+        if (!Array.isArray(cards) || cards.length !== 2) {
+          return cards.join(' ');
+        }
+
+        const parsed = cards.map((card) => {
+          const match = card.match(/^([2-9]|10|j|q|k|a)([hdsc])$/i);
+          if (!match) return null;
+
+          return {
+            card,
+            value: getCardValue(card),
+            suit: match[2].toLowerCase(),
+            rank: cardRankText(card)
+          };
+        }).filter(Boolean);
+
+        if (parsed.length !== 2) {
+          return cards.join(' ');
+        }
+
+        const [first, second] = parsed.sort((a, b) => b.value - a.value);
+        if (first.value === second.value) {
+          return `${first.rank}${second.rank}`;
+        }
+
+        const suffix = first.suit === second.suit ? 's' : 'o';
+        return `${first.rank}${second.rank}${suffix}`;
+      }
+
+      async function fetchEquity(handText) {
+        const cards = parseHand(handText);
+        if (cards.length !== 2) {
+          throw new Error('Please enter exactly two cards, like "Ah Kd".');
+        }
+
+        const handNotation = formatHandNotation(cards);
+        const payloads = [
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cards: handNotation }) },
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hand: handNotation }) },
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cards: handNotation }) },
+          { method: 'GET', url: '/api/equity?hand=' + encodeURIComponent(handNotation) }
+        ];
+
+        let lastError = null;
+
+        for (const candidate of payloads) {
+          try {
+            const response = candidate.method === 'GET'
+              ? await fetch(candidate.url)
+              : await fetch('/api/equity', candidate);
+
+            if (!response.ok) {
+              throw new Error(`API returned ${response.status}`);
+            }
+
+            const data = await response.json();
+            const equity =
+              data.equity ??
+              data.value ??
+              data.result ??
+              data.percentage ??
+              data.percent ??
+              data.winRate ??
+              data.equity_percentage ??
+              data.data?.equity ??
+              data.data?.value;
+
+            if (equity === undefined || equity === null || equity === '') {
+              throw new Error('API response did not include an equity value.');
+            }
+
+            return Number(equity) * 100 > 0 && Number(equity) <= 100
+              ? Number(equity) * 100
+              : Number(equity);
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        throw lastError || new Error('Could not fetch equity.');
+      }
+
+      function displayEquity(value) {
+        const percent = Number(value);
+        equityValue.textContent = Number.isFinite(percent) ? `${percent.toFixed(2)}%` : '--';
+      }
+
+      async function handleSubmit() {
+        const handText = handInput.value;
+        const cards = parseHand(handText);
+
+        if (cards.length !== 2) {
+          renderHand([]);
+          displayEquity(NaN);
+          setStatus('Please enter exactly two cards, like "Ah Kd".', true);
+          return;
+        }
+
+        renderHand(cards);
+        setStatus('Calculating equity...');
+        equityValue.textContent = '...';
+
+        try {
+          const equity = await fetchEquity(handText);
+          displayEquity(equity);
+          setStatus(`Equity for ${cards.join(' ').toUpperCase()} is ready.`);
+        } catch (error) {
+          renderHand(cards);
+          displayEquity(NaN);
+          setStatus(error.message || 'Unable to calculate equity.', true);
+        }
+      }
+
+      function toggleHeatmap() {
+        heatmapContainer.classList.toggle('visible');
+      }
+
+      heatmapBtn.addEventListener('click', toggleHeatmap);
+      heatmapCloseBtn.addEventListener('click', toggleHeatmap);
+      heatmapContainer.addEventListener('click', (event) => {
+        if (event.target === heatmapContainer) {
+          toggleHeatmap();
+        }
+      });
+
+      submitBtn.addEventListener('click', handleSubmit);
+      handInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          handleSubmit();
+        }
+      });
+
+      renderHand(parseHand(handInput.value));
+    </script>
+  </body>
+</html>
